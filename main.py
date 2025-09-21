@@ -1,41 +1,31 @@
-from fastapi import FastAPI, UploadFile
-from deepface import DeepFace
-import os
+from fastapi import FastAPI
+from auth.register import router as register_router
+from auth.login import router as login_router
+from auth.dashboard import router as dashboard_router
+from auth.logout import router as logout_router  # Importamos logout
+from auth.users import router as users_router  # Importamos users
 
+# main.py de FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Middleware CORS (poner primero)
+# Incluir routers de auth
+app.include_router(register_router)
+app.include_router(login_router)
+app.include_router(dashboard_router)
+app.include_router(logout_router)  # Incluir logout
+app.include_router(users_router)   # Incluir users
+
+origins = [
+    "http://localhost:5173",  # URL de tu frontend React
+    "http://127.0.0.1:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite por defecto corre aquí
+    allow_origins=origins,   # permite estas URLs
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],     # permite GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],     # permite headers personalizados
 )
-
-# Carpeta para subir imágenes
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-@app.post("/analyze")
-async def analyze_face(file: UploadFile):
-    # Guardar archivo temporal
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-    with open(file_path, "wb") as f:
-        f.write(await file.read())
-
-    # Detectar rostro
-    try:
-        result = DeepFace.detectFace(file_path, detector_backend="retinaface", enforce_detection=True)
-        # Por ahora devolvemos un box fijo como ejemplo
-        faceBox = {"x": 50, "y": 50, "w": 200, "h": 200}
-    except Exception as e:
-        return {"error": str(e)}
-    finally:
-        # Opcional: borrar la imagen temporal
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    return {"faceBox": faceBox}

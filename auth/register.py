@@ -1,8 +1,40 @@
+# # back-fastapi/auth/register.py
+# from fastapi import APIRouter, HTTPException, Depends
+# from sqlalchemy.orm import Session
+# from pydantic import BaseModel
+# from passlib.context import CryptContext
+# from database import get_db, get_user_by_username, User
+
+# router = APIRouter()
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# class RegisterRequest(BaseModel):
+#     username: str
+#     password: str
+
+# @router.post("/register")
+# def register(request: RegisterRequest, db: Session = Depends(get_db)):
+#     user = get_user_by_username(db, request.username)
+#     if user:
+#         raise HTTPException(status_code=400, detail="El usuario ya existe")
+    
+#     hashed_password = pwd_context.hash(request.password)
+#     new_user = User(username=request.username, password=hashed_password)
+#     db.add(new_user)
+#     db.commit()
+#     db.refresh(new_user)
+    
+#     return {"message": f"Usuario {new_user.username} registrado con éxito"}
+
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from database import get_db, get_user_by_username, User
+from fastapi.responses import JSONResponse
+from jose import jwt
+from config import settings
+from datetime import datetime, timedelta
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -10,6 +42,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class RegisterRequest(BaseModel):
     username: str
     password: str
+
+# Función para crear el token JWT
+def create_token(data: dict):
+    data_token = data.copy()
+    data_token["exp"] = datetime.utcnow() + timedelta(seconds=int(settings.TOKEN_SECONDS_EXP))
+    return jwt.encode(data_token, key=settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 @router.post("/register")
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
@@ -23,4 +61,8 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     
-    return {"message": f"Usuario {new_user.username} registrado con éxito"}
+    # Crear el token al registrarse
+    token = create_token({"sub": new_user.username})
+    
+    return JSONResponse(content={"message": f"Usuario {new_user.username} registrado con éxito", "access_token": token, "token_type": "bearer"})
+

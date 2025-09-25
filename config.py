@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
     TOKEN_SECONDS_EXP: int
+    STRIPE_SECRET_KEY: str
+    STRIPE_WEBHOOK_SECRET: str
 
     class Config:
         env_file = ".env"

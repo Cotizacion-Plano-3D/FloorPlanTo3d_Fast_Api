@@ -4,6 +4,9 @@ from auth.login import router as login_router
 from auth.dashboard import router as dashboard_router
 from auth.logout import router as logout_router  # Importamos logout
 from auth.users import router as users_router  # Importamos users
+from auth.stripe import router as stripe_router
+from auth.stripe_create_membresia import router as stripe_create_membresia_router
+from auth.stripe_webhook import router as stripe_webhook_router
 from routers.membresia import router as membresia_router
 from routers.suscripcion import router as suscripcion_router
 from routers.pago import router as pago_router
@@ -22,6 +25,9 @@ app.include_router(users_router)   # Incluir users
 app.include_router(membresia_router)
 app.include_router(suscripcion_router)
 app.include_router(pago_router)
+app.include_router(stripe_router)
+app.include_router(stripe_create_membresia_router)
+app.include_router(stripe_webhook_router)
 
 origins = [
     "http://localhost:5173",  # URL de tu frontend React

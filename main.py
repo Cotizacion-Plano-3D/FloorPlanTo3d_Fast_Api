@@ -4,6 +4,9 @@ from auth.login import router as login_router
 from auth.dashboard import router as dashboard_router
 from auth.logout import router as logout_router  # Importamos logout
 from auth.users import router as users_router  # Importamos users
+from routers.membresia import router as membresia_router
+from routers.suscripcion import router as suscripcion_router
+from routers.pago import router as pago_router
 
 # main.py de FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +19,9 @@ app.include_router(login_router)
 app.include_router(dashboard_router)
 app.include_router(logout_router)  # Incluir logout
 app.include_router(users_router)   # Incluir users
+app.include_router(membresia_router)
+app.include_router(suscripcion_router)
+app.include_router(pago_router)
 
 origins = [
     "http://localhost:5173",  # URL de tu frontend React

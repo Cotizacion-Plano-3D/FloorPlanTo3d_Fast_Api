@@ -5,21 +5,22 @@ from pydantic import BaseModel
 from jose import jwt
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
-from database import get_db, get_user_by_username
+from database import get_db
+from repositories.user_repository import get_user_by_username
 from config import settings
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    correo: str
+    contrasena: str
 
-def authenticate_user(db: Session, username: str, password: str):
-    user = get_user_by_username(db, username)
+def authenticate_user(db: Session, correo: str, contrasena: str):
+    user = get_user_by_username(db, correo)
     if not user:
         return False
-    if not pwd_context.verify(password, user.password):
+    if not pwd_context.verify(contrasena, user.contrasena):
         return False
     return user
 
@@ -30,9 +31,9 @@ def create_token(data: dict):
 
 @router.post("/login")
 def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = authenticate_user(db, request.username, request.password)
+    user = authenticate_user(db, request.correo, request.contrasena)
     if not user:
         raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
-    
-    token = create_token({"sub": user.username})
+
+    token = create_token({"sub": user.correo})
     return {"access_token": token, "token_type": "bearer"}

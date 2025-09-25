@@ -2,7 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from passlib.context import CryptContext
-from database import get_db, get_user_by_username, User
+from database import get_db
+from repositories.user_repository import get_user_by_username
+from models.usuario import Usuario
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from config import settings

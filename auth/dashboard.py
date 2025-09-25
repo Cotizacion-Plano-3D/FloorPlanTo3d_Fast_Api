@@ -1,3 +1,4 @@
+from models.usuario import Usuario
 # back-fastapi/auth/dashboard.py
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer

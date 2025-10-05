@@ -4,13 +4,16 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from jose import jwt
 from datetime import datetime, timedelta
-from passlib.context import CryptContext
+import hashlib
 from database import get_db
 from repositories.user_repository import get_user_by_username
 from config import settings
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password against hash"""
+    return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
 
 class LoginRequest(BaseModel):
     correo: str
@@ -20,7 +23,8 @@ def authenticate_user(db: Session, correo: str, contrasena: str):
     user = get_user_by_username(db, correo)
     if not user:
         return False
-    if not pwd_context.verify(contrasena, user.contrasena):
+    
+    if not verify_password(contrasena, user.contrasena):
         return False
     return user
 

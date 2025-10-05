@@ -29,7 +29,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from passlib.context import CryptContext
+import hashlib
 from database import get_db
 from repositories.user_repository import get_user_by_username
 from models.usuario import Usuario
@@ -39,12 +39,19 @@ from config import settings
 from datetime import datetime, timedelta
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class RegisterRequest(BaseModel):
     correo: str
     contrasena: str
     nombre: str
+
+def hash_password(password: str) -> str:
+    """Hash password using SHA-256"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password against hash"""
+    return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
 
 # Función para crear el token JWT
 def create_token(data: dict):
@@ -58,7 +65,7 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     if user:
         raise HTTPException(status_code=400, detail="El usuario ya existe")
 
-    hashed_password = pwd_context.hash(request.contrasena)
+    hashed_password = hash_password(request.contrasena)
     new_user = Usuario(correo=request.correo, contrasena=hashed_password, nombre=request.nombre)
     db.add(new_user)
     db.commit()

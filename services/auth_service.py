@@ -1,8 +1,9 @@
+# services/auth_service.py
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 from config import settings
-from auth.repositories.user_repository import get_user_by_username
+from repositories.user_repository import get_user_by_username
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

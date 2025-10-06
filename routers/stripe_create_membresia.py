@@ -1,3 +1,4 @@
+# routers/stripe_create_membresia.py
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -7,6 +8,7 @@ from database import get_db
 from models.membresia import Membresia
 from models.suscripcion import Suscripcion
 from models.usuario import Usuario
+from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/api/stripe", tags=["stripe"])
 

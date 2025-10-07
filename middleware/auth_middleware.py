@@ -28,6 +28,8 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
+    print(f"DEBUG: Token recibido: {credentials.credentials[:20]}...")
+    
     try:
         # Decodificar el token JWT
         payload = jwt.decode(
@@ -35,17 +37,25 @@ def get_current_user(
             settings.SECRET_KEY, 
             algorithms=[settings.ALGORITHM]
         )
+        print(f"DEBUG: Payload decodificado: {payload}")
         correo: str = payload.get("sub")
+        print(f"DEBUG: Correo extraído: {correo}")
         if correo is None:
+            print("DEBUG: Error - correo es None")
             raise credentials_exception
-    except JWTError:
+    except JWTError as e:
+        print(f"DEBUG: Error JWT: {e}")
         raise credentials_exception
     
     # Buscar el usuario en la base de datos
+    print(f"DEBUG: Buscando usuario con correo: {correo}")
     user = get_user_by_username(db, correo)
+    print(f"DEBUG: Usuario encontrado: {user is not None}")
     if user is None:
+        print("DEBUG: Error - usuario no encontrado en BD")
         raise credentials_exception
     
+    print(f"DEBUG: Usuario autenticado exitosamente: {user.correo}")
     return user
 
 def get_current_user_optional(

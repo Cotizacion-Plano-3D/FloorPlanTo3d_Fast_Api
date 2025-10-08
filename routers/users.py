@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
+from middleware.auth_middleware import get_current_user
 from models.usuario import Usuario
 from schemas import UsuarioResponse, ErrorResponse
 from typing import List
@@ -84,16 +85,7 @@ def test_users(db: Session = Depends(get_db)):
     "/me",
     response_model=UsuarioResponse,
     summary="Obtener perfil del usuario actual",
-    description="""
-    Obtiene la información del perfil del usuario autenticado.
-    
-    **⚠️ Requiere autenticación:** Sí
-    **🔒 Permisos:** Usuario autenticado (propio perfil)
-    
-    **Información devuelta:**
-    - Datos personales del usuario autenticado
-    - Información de registro
-    """,
+    openapi_extra={"security": [{"BearerAuth": []}]}, 
     responses={
         200: {
             "description": "Perfil del usuario obtenido exitosamente",
@@ -111,14 +103,11 @@ def test_users(db: Session = Depends(get_db)):
     }
 )
 def get_current_user_profile(
-    db: Session = Depends(get_db)
+    user: Usuario = Depends(get_current_user)
 ):
     """
     Obtener perfil del usuario actual
-    
-    Devuelve la información del primer usuario (para pruebas).
     """
-    user = db.query(Usuario).first()
     if not user:
         raise HTTPException(status_code=404, detail="No hay usuarios registrados")
-    return UsuarioResponse.from_orm(user)
+    return UsuarioResponse.model_validate(user)

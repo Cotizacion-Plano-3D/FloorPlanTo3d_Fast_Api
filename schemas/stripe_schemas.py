@@ -19,5 +19,4 @@ class StripeCreateMembresiaRequest(BaseModel):
 class StripeCreateMembresiaResponse(BaseModel):
     """Esquema de respuesta para creación de membresía en Stripe"""
     membresia_id: int = Field(..., description="ID de la membresía creada", example=1)
-    stripe_price_id: str = Field(..., description="ID del precio en Stripe", example="price_1234567890")
     message: str = Field(..., description="Mensaje de confirmación", example="Membresía creada exitosamente en Stripe")

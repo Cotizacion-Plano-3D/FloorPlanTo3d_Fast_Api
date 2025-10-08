@@ -28,34 +28,32 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    print(f"DEBUG: Token recibido: {credentials.credentials[:20]}...")
-    
+    print(f"[AUTH] Token recibido: {credentials.credentials}")
     try:
-        # Decodificar el token JWT
         payload = jwt.decode(
-            credentials.credentials, 
-            settings.SECRET_KEY, 
+            credentials.credentials,
+            settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM]
         )
-        print(f"DEBUG: Payload decodificado: {payload}")
+        print(f"[AUTH] Payload decodificado: {payload}")
         correo: str = payload.get("sub")
-        print(f"DEBUG: Correo extraído: {correo}")
+        print(f"[AUTH] Claim 'sub' extraído: {correo}")
         if correo is None:
-            print("DEBUG: Error - correo es None")
+            print("[AUTH] ERROR: Claim 'sub' es None")
             raise credentials_exception
     except JWTError as e:
-        print(f"DEBUG: Error JWT: {e}")
+        print(f"[AUTH] ERROR: JWT inválido: {e}")
         raise credentials_exception
-    
-    # Buscar el usuario en la base de datos
-    print(f"DEBUG: Buscando usuario con correo: {correo}")
+
+    print(f"[AUTH] Buscando usuario en BD con correo: {correo}")
     user = get_user_by_username(db, correo)
-    print(f"DEBUG: Usuario encontrado: {user is not None}")
-    if user is None:
-        print("DEBUG: Error - usuario no encontrado en BD")
+    if user:
+        print(f"[AUTH] Usuario encontrado: id={user.id}, correo={user.correo}")
+    else:
+        print(f"[AUTH] ERROR: Usuario no encontrado en BD para correo: {correo}")
         raise credentials_exception
-    
-    print(f"DEBUG: Usuario autenticado exitosamente: {user.correo}")
+
+    print(f"[AUTH] Usuario autenticado exitosamente: {user.correo}")
     return user
 
 def get_current_user_optional(

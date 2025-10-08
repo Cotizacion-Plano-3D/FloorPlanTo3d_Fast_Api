@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.params import Depends
+from fastapi.security import HTTPBearer
 from routers.register import router as register_router
 from routers.login import router as login_router
 from routers.dashboard import router as dashboard_router
@@ -17,24 +19,6 @@ from fastapi.middleware.cors import CORSMiddleware
 # Configuración detallada de FastAPI para Swagger
 app = FastAPI(
     title="FloorPlanTo3D API",
-    description="""
-    ## API para Sistema de Planos 3D con Membresías
-
-    Esta API permite gestionar usuarios, membresías, suscripciones y pagos para un sistema de conversión de planos a modelos 3D.
-
-    ### Características principales:
-    * 🔐 **Autenticación**: Registro y login de usuarios con JWT
-    * 💳 **Membresías**: Gestión de planes de suscripción
-    * 📊 **Suscripciones**: Control de suscripciones de usuarios
-    * 💰 **Pagos**: Integración con Stripe para procesamiento de pagos
-    * 🏠 **Dashboard**: Panel de control para usuarios
-
-    ### Autenticación
-    La mayoría de endpoints requieren autenticación JWT. Incluye el token en el header:
-    ```
-    Authorization: Bearer <tu_token>
-    ```
-    """,
     version="1.0.0",
     contact={
         "name": "Equipo FloorPlanTo3D",
@@ -48,11 +32,16 @@ app = FastAPI(
     openapi_url="/openapi.json",  # URL para el esquema OpenAPI
 )
 
+bearer_scheme = HTTPBearer()
+
 # Incluir routers
 app.include_router(register_router)
 app.include_router(login_router)
 app.include_router(dashboard_router)
-app.include_router(users_router)
+app.include_router(
+    users_router
+)
+
 app.include_router(membresia_router)
 app.include_router(suscripcion_router)
 app.include_router(pago_router)

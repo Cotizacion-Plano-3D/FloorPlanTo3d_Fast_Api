@@ -7,6 +7,8 @@ from fastapi import Depends
 from database import get_db
 from models.membresia import Membresia
 from config import settings
+from middleware.auth_middleware import get_current_user
+from models.usuario import Usuario
 
 # Configura tu clave secreta de Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -15,10 +17,9 @@ router = APIRouter(prefix="/api/stripe", tags=["stripe"])
 
 class CheckoutSessionRequest(BaseModel):
     membresia_id: int
-    email: str
 
 @router.post("/create-checkout-session")
-async def create_checkout_session(req: CheckoutSessionRequest, db=Depends(get_db)):
+async def create_checkout_session(req: CheckoutSessionRequest, db=Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     membresia = db.query(Membresia).filter(Membresia.id == req.membresia_id).first()
     if not membresia:
         raise HTTPException(status_code=404, detail="Membresía no encontrada")
@@ -37,9 +38,13 @@ async def create_checkout_session(req: CheckoutSessionRequest, db=Depends(get_db
                 "quantity": 1,
             }],
             mode="payment",
-            customer_email=req.email,
-            success_url="http://localhost:5173/dashboard?success=true",
-            cancel_url="http://localhost:5173/dashboard?canceled=true",
+            customer_email=current_user.correo,
+            metadata={
+                "membresia_id": str(membresia.id),
+                "membresia_nombre": membresia.nombre
+            },
+            success_url=f"{settings.FRONTEND_URL}/dashboard?success=true",
+            cancel_url=f"{settings.FRONTEND_URL}/dashboard?canceled=true",
         )
         return JSONResponse({"id": session.id, "url": session.url})
     except Exception as e:

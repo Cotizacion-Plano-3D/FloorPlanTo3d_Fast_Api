@@ -9,5 +9,4 @@ class Membresia(Base):
     precio = Column(Float, nullable=False)
     duracion = Column(Integer, nullable=False)  # en días
     descripcion = Column(String)
-    stripe_price_id = Column(String, nullable=True)  # ID de precio de Stripe
     suscripciones = relationship("Suscripcion", back_populates="membresia")

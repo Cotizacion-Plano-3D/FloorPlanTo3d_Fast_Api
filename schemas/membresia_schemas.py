@@ -20,7 +20,6 @@ class MembresiaCreate(MembresiaBase):
 class MembresiaResponse(MembresiaBase):
     """Esquema de respuesta para membresía"""
     id: int = Field(..., description="ID único de la membresía", example=1)
-    stripe_price_id: Optional[str] = Field(None, description="ID del precio en Stripe", example="price_1234567890")
     
     class Config:
         from_attributes = True

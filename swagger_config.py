@@ -29,9 +29,7 @@ def custom_openapi(app: FastAPI):
         }
     }
     
-    # Agregar seguridad global
-    openapi_schema["security"] = [{"BearerAuth": []}]
-    
+
     # Personalizar información adicional
     openapi_schema["info"]["x-logo"] = {
         "url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"

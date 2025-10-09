@@ -1,21 +1,21 @@
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
 from config import settings
+
+from models import Base, Usuario, Membresia, Suscripcion, Pago
 
 DATABASE_URL = f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,  # Verifica conexiones antes de usarlas
+    pool_recycle=300,    # Recicla conexiones cada 5 minutos
+    echo=False           # Cambia a True para ver las consultas SQL
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)
-
-# Crear tablas automáticamente
+# Crear tablas automáticamente (asegúrate de importar todos los modelos en algún lugar central)
 Base.metadata.create_all(bind=engine)
 
 # Dependencia para inyectar sesión DB
@@ -26,5 +26,3 @@ def get_db():
     finally:
         db.close()
 
-def get_user_by_username(db: Session, username: str):
-    return db.query(User).filter(User.username == username).first()

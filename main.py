@@ -15,8 +15,18 @@ from routers.planos import router as planos_router
 from swagger_config import custom_openapi
 from routers.google_auth import router as google_auth_router
 
+import logging
 # main.py de FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Consola
+        logging.FileHandler('stripe_debug.log')  # Archivo
+    ]
+)
 
 # Configuración detallada de FastAPI para Swagger
 app = FastAPI(

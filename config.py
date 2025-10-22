@@ -12,7 +12,10 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str
     STRIPE_WEBHOOK_SECRET: str
     FRONTEND_URL: str = "http://localhost:3000"  # URL del frontend
-
+    FLOORPLAN_API_URL: str = "http://localhost:5000"  # URL del servicio Flask
+    GOOGLE_DRIVE_FOLDER_ID: str = "1_Mv_vpgc-0LCEuPaI49Ym3xvzvRhW7OW"  # ID del folder de Google Drive
+    GOOGLE_CREDENTIALS_PATH: str = "./credentials.json"
+    GOOGLE_OAUTH_REDIRECT_URI: str = "http://localhost:8000/auth/google/callback"
     class Config:
         env_file = ".env"
 

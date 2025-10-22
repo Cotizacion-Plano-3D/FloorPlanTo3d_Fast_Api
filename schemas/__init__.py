@@ -23,6 +23,12 @@ from .response_schemas import (
 from .stripe_schemas import (
     StripeWebhookRequest, StripeCreateMembresiaRequest, StripeCreateMembresiaResponse
 )
+from .plano_schemas import (
+    PlanoBase, PlanoCreate, PlanoUpdate, PlanoResponse, PlanoListResponse
+)
+from .modelo3d_schemas import (
+    Modelo3DBase, Modelo3DCreate, Modelo3DResponse, Modelo3DDataResponse
+)
 
 __all__ = [
     # Usuario
@@ -44,5 +50,11 @@ __all__ = [
     "ErrorResponse", "SuccessResponse", "DeleteResponse", "DashboardResponse",
     
     # Stripe
-    "StripeWebhookRequest", "StripeCreateMembresiaRequest", "StripeCreateMembresiaResponse"
+    "StripeWebhookRequest", "StripeCreateMembresiaRequest", "StripeCreateMembresiaResponse",
+    
+    # Plano
+    "PlanoBase", "PlanoCreate", "PlanoUpdate", "PlanoResponse", "PlanoListResponse",
+    
+    # Modelo3D
+    "Modelo3DBase", "Modelo3DCreate", "Modelo3DResponse", "Modelo3DDataResponse"
 ]

@@ -11,3 +11,4 @@ class Usuario(Base):
     contrasena = Column(String, nullable=False)
     fecha_creacion = Column(DateTime, default=datetime.datetime.utcnow)
     suscripciones = relationship("Suscripcion", back_populates="usuario")
+    planos = relationship("Plano", back_populates="usuario")

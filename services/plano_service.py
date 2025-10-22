@@ -20,36 +20,106 @@ class PlanoService:
         self.modelo3d_repo = Modelo3DRepository(db)
 
     def create_plano(self, plano_data: PlanoCreate, usuario_id: int, file_content: bytes = None, filename: str = None) -> PlanoResponse:
-        """Crear un nuevo plano"""
-        file_url = None
+        """Crear un nuevo plano con verificación previa"""
+        if not file_content or not filename:
+            raise Exception("Archivo requerido para crear plano")
         
-        # Si hay contenido de archivo, subirlo a Google Drive
-        if file_content and filename:
+        # PASO 1: Verificar que es un plano válido con FloorPlanTo3D-API
+        print(f"🔍 Verificando que el archivo es un plano válido...")
+        
+        try:
+            # Llamar a FloorPlanTo3D-API para verificar que es un plano
+            flask_url = settings.FLOORPLAN_API_URL
+            response = requests.post(
+                f"{flask_url}/convert",
+                files={"file": (filename, file_content, "image/png")},
+                params={"format": "threejs"},
+                timeout=60  # 60 segundos para verificación
+            )
+            
+            # Manejar diferentes tipos de errores
+            if response.status_code != 200:
+                print(f"❌ Error del API: {response.status_code}")
+                print(f"📄 Respuesta: {response.text[:200]}...")
+                
+                # Si es error 500, probablemente no es un plano válido
+                if response.status_code == 500:
+                    raise Exception("El archivo no es un plano arquitectónico válido. El sistema no pudo procesar la imagen.")
+                elif response.status_code == 400:
+                    raise Exception("El archivo no es un plano arquitectónico válido. Formato de imagen no soportado.")
+                elif response.status_code == 422:
+                    raise Exception("El archivo no es un plano arquitectónico válido. Imagen corrupta o inválida.")
+                else:
+                    raise Exception(f"El archivo no es un plano válido. Error del sistema: {response.status_code}")
+            
+            # Verificar que la respuesta contiene datos de plano
             try:
-                # Determinar el tipo MIME basado en la extensión del archivo
-                mime_type = 'image/jpeg'  # Por defecto
-                if filename.lower().endswith('.png'):
-                    mime_type = 'image/png'
-                elif filename.lower().endswith('.gif'):
-                    mime_type = 'image/gif'
-                elif filename.lower().endswith('.webp'):
-                    mime_type = 'image/webp'
-                
-                # Subir archivo a Google Drive
-                file_url = google_drive_service.upload_file(
-                    file_content=file_content,
-                    filename=filename,
-                    mime_type=mime_type
-                )
-                
-                if not file_url:
-                    raise Exception("Error al subir archivo a Google Drive")
-                    
-            except Exception as e:
-                print(f"Error subiendo archivo a Google Drive: {e}")
-                raise Exception(f"Error al subir archivo: {str(e)}")
+                verification_data = response.json()
+            except ValueError:
+                raise Exception("El archivo no es un plano arquitectónico válido. Respuesta inválida del sistema.")
+            
+            if not verification_data.get('objects') or len(verification_data.get('objects', [])) == 0:
+                raise Exception("El archivo no contiene elementos de plano reconocibles (paredes, puertas, ventanas)")
+            
+            print(f"✅ Verificación exitosa: {len(verification_data.get('objects', []))} objetos detectados")
+            
+        except requests.exceptions.Timeout:
+            raise Exception("El archivo no es un plano arquitectónico válido. Tiempo de procesamiento excedido.")
+        except requests.exceptions.ConnectionError:
+            raise Exception("Error de conexión con el servicio de verificación. Intenta nuevamente.")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error de conexión con el servicio de verificación: {str(e)}")
+        except Exception as e:
+            # Si ya es un mensaje amigable, re-lanzarlo
+            if "no es un plano" in str(e).lower() or "no contiene elementos" in str(e).lower():
+                raise e
+            else:
+                raise Exception(f"El archivo no es un plano arquitectónico válido: {str(e)}")
         
+        # PASO 2: Si la verificación es exitosa, subir a Google Drive
+        file_url = None
+        try:
+            # Determinar el tipo MIME basado en la extensión del archivo
+            mime_type = 'image/jpeg'  # Por defecto
+            if filename.lower().endswith('.png'):
+                mime_type = 'image/png'
+            elif filename.lower().endswith('.gif'):
+                mime_type = 'image/gif'
+            elif filename.lower().endswith('.webp'):
+                mime_type = 'image/webp'
+            
+            print(f"📤 Subiendo archivo verificado a Google Drive...")
+            
+            # Subir archivo a Google Drive
+            file_url = google_drive_service.upload_file(
+                file_content=file_content,
+                filename=filename,
+                mime_type=mime_type
+            )
+            
+            if not file_url:
+                raise Exception("Error al subir archivo a Google Drive")
+            
+            print(f"✅ Archivo subido exitosamente a Google Drive")
+                
+        except Exception as e:
+            print(f"❌ Error subiendo archivo a Google Drive: {e}")
+            raise Exception(f"Error al subir archivo: {str(e)}")
+        
+        # PASO 3: Crear registro en BD con estado 'completado' (ya verificado y convertido)
         plano = self.plano_repo.create(plano_data, usuario_id, file_url)
+        
+        # Actualizar estado a completado ya que ya fue verificado y convertido
+        self.plano_repo.update_estado(plano.id, usuario_id, "completado")
+        
+        # PASO 4: Guardar datos del modelo 3D directamente
+        try:
+            self.modelo3d_repo.update(plano.id, verification_data, "generado")
+            print(f"✅ Modelo 3D guardado en base de datos")
+        except Exception as e:
+            print(f"⚠️ Error guardando modelo 3D: {e}")
+            # No fallar por esto, el plano ya está creado
+        
         return PlanoResponse.from_orm(plano)
 
     def get_plano(self, plano_id: int, usuario_id: int) -> Optional[PlanoResponse]:

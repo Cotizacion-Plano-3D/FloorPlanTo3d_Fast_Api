@@ -12,9 +12,18 @@ from routers.membresia import router as membresia_router
 from routers.suscripcion import router as suscripcion_router
 from routers.pago import router as pago_router
 from swagger_config import custom_openapi
-
+import logging
 # main.py de FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Consola
+        logging.FileHandler('stripe_debug.log')  # Archivo
+    ]
+)
 
 # Configuración detallada de FastAPI para Swagger
 app = FastAPI(

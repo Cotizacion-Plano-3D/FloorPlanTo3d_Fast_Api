@@ -11,7 +11,10 @@ from routers.stripe_webhook import router as stripe_webhook_router
 from routers.membresia import router as membresia_router
 from routers.suscripcion import router as suscripcion_router
 from routers.pago import router as pago_router
+from routers.planos import router as planos_router
 from swagger_config import custom_openapi
+from routers.google_auth import router as google_auth_router
+
 import logging
 # main.py de FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -54,9 +57,11 @@ app.include_router(
 app.include_router(membresia_router)
 app.include_router(suscripcion_router)
 app.include_router(pago_router)
+app.include_router(planos_router)
 app.include_router(stripe_router)
 app.include_router(stripe_create_membresia_router)
 app.include_router(stripe_webhook_router)
+app.include_router(google_auth_router)
 
 origins = [
     "http://localhost:5173",  # URL de tu frontend React
@@ -72,6 +77,12 @@ app.add_middleware(
     allow_methods=["*"],     # permite GET, POST, PUT, DELETE, etc.
     allow_headers=["*"],     # permite headers personalizados
 )
+
+# Endpoint de prueba
+@app.get("/test")
+async def test_endpoint():
+    """Endpoint de prueba para verificar que el servidor funciona"""
+    return {"message": "Servidor funcionando correctamente", "status": "ok"}
 
 # Configurar OpenAPI personalizado
 app.openapi = lambda: custom_openapi(app)

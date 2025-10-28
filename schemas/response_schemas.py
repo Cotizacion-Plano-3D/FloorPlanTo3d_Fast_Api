@@ -3,7 +3,7 @@ Esquemas Pydantic para Respuestas Generales
 """
 
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Any
 from .usuario_schemas import UsuarioResponse
 from .suscripcion_schemas import SuscripcionResponse
 from .membresia_schemas import MembresiaResponse
@@ -16,6 +16,7 @@ class ErrorResponse(BaseModel):
 class SuccessResponse(BaseModel):
     """Esquema para respuestas de éxito genéricas"""
     message: str = Field(..., description="Mensaje de confirmación", example="Operación realizada con éxito")
+    data: Optional[Any] = Field(None, description="Datos de respuesta")
 
 class DeleteResponse(BaseModel):
     """Esquema para respuestas de eliminación"""

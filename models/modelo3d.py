@@ -15,3 +15,4 @@ class Modelo3D(Base):
     
     # Relaciones
     plano = relationship("Plano", back_populates="modelo3d")
+    materiales = relationship("MaterialModelo3D", back_populates="modelo3d", cascade="all, delete-orphan")

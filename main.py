@@ -12,6 +12,9 @@ from routers.membresia import router as membresia_router
 from routers.suscripcion import router as suscripcion_router
 from routers.pago import router as pago_router
 from routers.planos import router as planos_router
+from routers.categoria import router as categoria_router
+from routers.material import router as material_router
+from routers.material_modelo3d import router as material_modelo3d_router
 from swagger_config import custom_openapi
 from routers.google_auth import router as google_auth_router
 
@@ -58,6 +61,9 @@ app.include_router(membresia_router)
 app.include_router(suscripcion_router)
 app.include_router(pago_router)
 app.include_router(planos_router)
+app.include_router(categoria_router)
+app.include_router(material_router)
+app.include_router(material_modelo3d_router)
 app.include_router(stripe_router)
 app.include_router(stripe_create_membresia_router)
 app.include_router(stripe_webhook_router)
@@ -66,7 +72,7 @@ app.include_router(google_auth_router)
 origins = [
     "http://localhost:5173",  # URL de tu frontend React
     "http://127.0.0.1:5173",
-    "http://localhost:3000",  # URL de tu frontend React
+    "http://localhost:3000",  # URL de tu frontend Next.js
     "http://127.0.0.1:3000",
 ]
 
@@ -76,6 +82,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],     # permite GET, POST, PUT, DELETE, etc.
     allow_headers=["*"],     # permite headers personalizados
+    expose_headers=["*"],    # expone headers en respuestas (crítico para imágenes)
 )
 
 # Endpoint de prueba

@@ -284,7 +284,10 @@ async def get_plano_image(
             media_type=response.headers.get('content-type', 'image/jpeg'),
             headers={
                 'Cache-Control': 'public, max-age=3600',
-                'Content-Length': str(len(response.content))
+                'Content-Length': str(len(response.content)),
+                'Access-Control-Allow-Origin': '*',  # Permitir acceso desde cualquier origen
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Allow-Headers': '*',
             }
         )
         

@@ -139,8 +139,6 @@ htmlcov/
 *.h5
 *.pkl
 *.joblib
-*.model
-models/
 checkpoints/
 
 # Data files

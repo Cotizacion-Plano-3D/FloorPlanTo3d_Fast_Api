@@ -74,8 +74,16 @@ class GoogleDriveService:
         try:
             # Autenticar si no está autenticado
             if not self.service:
+                print("⚠️ Servicio de Google Drive no inicializado, autenticando...")
                 if not self.authenticate():
+                    print("❌ Falló la autenticación de Google Drive")
                     return None
+                print("✅ Autenticación exitosa")
+            
+            print(f"📤 Preparando subida de archivo: {filename}")
+            print(f"   Tamaño: {len(file_content)} bytes")
+            print(f"   MIME type: {mime_type}")
+            print(f"   Folder ID: {self.folder_id}")
             
             # Crear metadatos del archivo
             file_metadata = {
@@ -90,6 +98,8 @@ class GoogleDriveService:
                 resumable=True
             )
             
+            print("🚀 Iniciando subida a Google Drive...")
+            
             # Subir archivo
             file = self.service.files().create(
                 body=file_metadata,
@@ -100,6 +110,8 @@ class GoogleDriveService:
             # Obtener URL de visualización
             file_id = file.get('id')
             web_view_link = file.get('webViewLink')
+            
+            print(f"✅ Archivo subido con ID: {file_id}")
             
             # Hacer el archivo público para que sea accesible
             try:
@@ -120,7 +132,9 @@ class GoogleDriveService:
             return download_url
             
         except Exception as e:
-            print(f"❌ Error subiendo archivo: {e}")
+            print(f"❌ Error detallado subiendo archivo: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def delete_file(self, file_id: str) -> bool:

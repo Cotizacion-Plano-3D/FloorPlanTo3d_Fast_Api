@@ -34,7 +34,8 @@ def add_material_to_modelo3d(
     current_user: Usuario = Depends(get_current_user)
 ):
     # Verificar que el modelo 3D existe
-    modelo3d = Modelo3DRepository.get_by_id(db, material_data.modelo3d_id)
+    modelo3d_repo = Modelo3DRepository(db)
+    modelo3d = modelo3d_repo.get_by_id(material_data.modelo3d_id)
     if not modelo3d:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -83,8 +84,9 @@ def add_materials_bulk(
         )
     
     # Verificar que todos los materiales y modelos existen
+    modelo3d_repo = Modelo3DRepository(db)
     for material_data in materiales_data:
-        modelo3d = Modelo3DRepository.get_by_id(db, material_data.modelo3d_id)
+        modelo3d = modelo3d_repo.get_by_id(material_data.modelo3d_id)
         if not modelo3d:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -127,7 +129,8 @@ def get_materiales_by_modelo3d(
     current_user: Usuario = Depends(get_current_user)
 ):
     # Verificar que el modelo 3D existe
-    modelo3d = Modelo3DRepository.get_by_id(db, modelo3d_id)
+    modelo3d_repo = Modelo3DRepository(db)
+    modelo3d = modelo3d_repo.get_by_id(modelo3d_id)
     if not modelo3d:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

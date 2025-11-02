@@ -28,6 +28,10 @@ class Modelo3DRepository:
         """Obtener modelo 3D por ID del plano"""
         return self.db.query(Modelo3D).filter(Modelo3D.plano_id == plano_id).first()
 
+    def get_by_id(self, modelo3d_id: int) -> Optional[Modelo3D]:
+        """Obtener modelo 3D por su ID"""
+        return self.db.query(Modelo3D).filter(Modelo3D.id == modelo3d_id).first()
+
     def get_by_plano_id_and_usuario(self, plano_id: int, usuario_id: int) -> Optional[Modelo3D]:
         """Obtener modelo 3D por ID del plano verificando que pertenezca al usuario"""
         return self.db.query(Modelo3D).join(Modelo3D.plano).filter(

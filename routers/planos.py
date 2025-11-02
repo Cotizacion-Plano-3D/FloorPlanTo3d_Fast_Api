@@ -91,7 +91,7 @@ async def get_planos(
 async def get_plano(
     plano_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user)  # ← REQUIERE AUTENTICACIÓN
 ):
     """Obtener un plano específico"""
     plano_service = PlanoService(db)

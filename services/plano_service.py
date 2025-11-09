@@ -305,3 +305,104 @@ class PlanoService:
             "plano_id": plano_id,
             "fecha_generacion": modelo3d.fecha_generacion.isoformat() if modelo3d.fecha_generacion else None
         }
+    
+    def update_modelo3d_objects(self, plano_id: int, usuario_id: int, objects_updates: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """
+        Actualizar dimensiones y posición de objetos específicos en el modelo 3D.
+        
+        Args:
+            plano_id: ID del plano
+            usuario_id: ID del usuario (para verificación de permisos)
+            objects_updates: Lista de diccionarios con actualizaciones de objetos
+                Cada diccionario debe tener:
+                - object_id: ID del objeto (string)
+                - width, height, depth: Dimensiones opcionales
+                - position: Diccionario con x, y, z opcionales
+        
+        Returns:
+            Diccionario con success, message y datos_json actualizado
+        """
+        # Verificar que el plano existe y pertenece al usuario
+        plano = self.plano_repo.get_by_id(plano_id, usuario_id)
+        if not plano:
+            return None
+        
+        # Obtener el modelo3d
+        modelo3d = self.modelo3d_repo.get_by_plano_id_and_usuario(plano_id, usuario_id)
+        if not modelo3d:
+            return None
+        
+        # Obtener datos_json actual
+        datos_json = modelo3d.datos_json.copy() if modelo3d.datos_json else {}
+        
+        # Obtener lista de objetos
+        objects = datos_json.get('objects', [])
+        if not objects:
+            return {
+                "success": False,
+                "error": "No se encontraron objetos en el modelo 3D"
+            }
+        
+        # Crear un diccionario para acceso rápido por ID
+        objects_dict = {str(obj.get('id')): obj for obj in objects}
+        
+        # Aplicar actualizaciones
+        updated_count = 0
+        for update in objects_updates:
+            object_id = str(update.get('object_id'))
+            
+            if object_id not in objects_dict:
+                print(f"⚠️ Objeto {object_id} no encontrado en el modelo 3D")
+                continue
+            
+            obj = objects_dict[object_id]
+            
+            # Actualizar dimensiones
+            if 'width' in update and update['width'] is not None:
+                if 'dimensions' not in obj:
+                    obj['dimensions'] = {}
+                obj['dimensions']['width'] = update['width']
+            
+            if 'height' in update and update['height'] is not None:
+                if 'dimensions' not in obj:
+                    obj['dimensions'] = {}
+                obj['dimensions']['height'] = update['height']
+            
+            if 'depth' in update and update['depth'] is not None:
+                if 'dimensions' not in obj:
+                    obj['dimensions'] = {}
+                obj['dimensions']['depth'] = update['depth']
+            
+            # Actualizar posición
+            if 'position' in update and update['position'] is not None:
+                if 'position' not in obj:
+                    obj['position'] = {}
+                
+                pos = update['position']
+                if 'x' in pos and pos['x'] is not None:
+                    obj['position']['x'] = pos['x']
+                if 'y' in pos and pos['y'] is not None:
+                    obj['position']['y'] = pos['y']
+                if 'z' in pos and pos['z'] is not None:
+                    obj['position']['z'] = pos['z']
+            
+            updated_count += 1
+        
+        # Actualizar datos_json con los objetos modificados
+        datos_json['objects'] = list(objects_dict.values())
+        
+        # Guardar en la base de datos
+        modelo3d_updated = self.modelo3d_repo.update(plano_id, datos_json, "generado")
+        
+        if not modelo3d_updated:
+            return {
+                "success": False,
+                "error": "Error al guardar las actualizaciones en la base de datos"
+            }
+        
+        return {
+            "success": True,
+            "message": f"{updated_count} objeto(s) actualizado(s) exitosamente",
+            "updated_count": updated_count,
+            "datos_json": datos_json
+        }

@@ -13,7 +13,7 @@ from services.plano_service import PlanoService
 from schemas.plano_schemas import (
     PlanoCreate, PlanoUpdate, PlanoResponse, PlanoListResponse
 )
-from schemas.modelo3d_schemas import Modelo3DDataResponse
+from schemas.modelo3d_schemas import Modelo3DDataResponse, Modelo3DObjectsUpdate
 from schemas.response_schemas import SuccessResponse, ErrorResponse
 
 router = APIRouter(prefix="/planos", tags=["planos"])
@@ -347,3 +347,47 @@ async def download_plano(
         raise HTTPException(status_code=500, detail=f"Error descargando archivo: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error procesando archivo: {str(e)}")
+
+@router.put("/{plano_id}/modelo3d/objects", response_model=SuccessResponse)
+async def update_modelo3d_objects(
+    plano_id: int,
+    update_data: Modelo3DObjectsUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Actualizar dimensiones y posición de objetos específicos en el modelo 3D"""
+    try:
+        plano_service = PlanoService(db)
+        
+        # Convertir los objetos del schema a formato de diccionario
+        objects_updates = []
+        for obj_update in update_data.objects:
+            update_dict = {
+                "object_id": obj_update.object_id
+            }
+            
+            if obj_update.width is not None:
+                update_dict["width"] = obj_update.width
+            if obj_update.height is not None:
+                update_dict["height"] = obj_update.height
+            if obj_update.depth is not None:
+                update_dict["depth"] = obj_update.depth
+            if obj_update.position is not None:
+                update_dict["position"] = obj_update.position
+            
+            objects_updates.append(update_dict)
+        
+        result = plano_service.update_modelo3d_objects(plano_id, current_user.id, objects_updates)
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Plano o modelo 3D no encontrado")
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Error al actualizar objetos"))
+        
+        return SuccessResponse(message=result.get("message", "Objetos actualizados exitosamente"))
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar objetos: {str(e)}")

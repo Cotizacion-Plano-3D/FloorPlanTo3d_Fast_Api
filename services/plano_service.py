@@ -63,6 +63,10 @@ class PlanoService:
             
             print(f"✅ Verificación exitosa: {len(verification_data.get('objects', []))} objetos detectados")
             
+            # 🔍 EXTRAER MEDIDAS del plano
+            medidas_extraidas = self._extract_measurements(verification_data)
+            print(f"📏 Medidas extraídas: {medidas_extraidas}")
+            
         except requests.exceptions.Timeout:
             raise Exception("El archivo no es un plano arquitectónico válido. Tiempo de procesamiento excedido.")
         except requests.exceptions.ConnectionError:
@@ -107,7 +111,15 @@ class PlanoService:
             raise Exception(f"Error al subir archivo: {str(e)}")
         
         # PASO 3: Crear registro en BD con estado 'completado' (ya verificado y convertido)
-        plano = self.plano_repo.create(plano_data, usuario_id, file_url)
+        # Agregar medidas extraídas al plano_data
+        plano_data_with_measures = PlanoCreate(
+            nombre=plano_data.nombre,
+            formato=plano_data.formato,
+            tipo_plano=plano_data.tipo_plano,
+            descripcion=plano_data.descripcion,
+            medidas_extraidas=medidas_extraidas
+        )
+        plano = self.plano_repo.create(plano_data_with_measures, usuario_id, file_url)
         
         # Actualizar estado a completado ya que ya fue verificado y convertido
         self.plano_repo.update_estado(plano.id, usuario_id, "completado")
@@ -406,3 +418,107 @@ class PlanoService:
             "updated_count": updated_count,
             "datos_json": datos_json
         }
+    
+    def _extract_measurements(self, verification_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extraer medidas relevantes del plano para cotización
+        
+        Args:
+            verification_data: Datos del modelo 3D del API de conversión
+            
+        Returns:
+            Dict con medidas extraídas (área, perímetro, conteos, etc.)
+        """
+        try:
+            objects = verification_data.get('objects', [])
+            scene = verification_data.get('scene', {})
+            bounds = scene.get('bounds', {})
+            
+            # Contadores de elementos
+            num_paredes = 0
+            num_ventanas = 0
+            num_puertas = 0
+            
+            # Medidas acumuladas
+            area_paredes = 0.0
+            area_ventanas = 0.0
+            area_puertas = 0.0
+            perimetro_total = 0.0
+            
+            # Detalles de objetos
+            objetos_detalle = []
+            
+            for obj in objects:
+                obj_type = obj.get('type', '')
+                dimensions = obj.get('dimensions', {})
+                position = obj.get('position', {})
+                
+                width = dimensions.get('width', 0)
+                height = dimensions.get('height', 0)
+                depth = dimensions.get('depth', 0)
+                
+                # Calcular área del objeto (aproximación)
+                area = width * height if width and height else 0
+                
+                obj_detail = {
+                    'id': obj.get('id'),
+                    'tipo': obj_type,
+                    'ancho': round(width, 2),
+                    'alto': round(height, 2),
+                    'profundidad': round(depth, 2),
+                    'area': round(area, 2),
+                    'posicion': {
+                        'x': round(position.get('x', 0), 2),
+                        'y': round(position.get('y', 0), 2),
+                        'z': round(position.get('z', 0), 2)
+                    }
+                }
+                
+                # Contar elementos y acumular áreas
+                if obj_type == 'wall':
+                    num_paredes += 1
+                    area_paredes += area
+                    perimetro_total += width  # Aproximación del perímetro
+                elif obj_type == 'window':
+                    num_ventanas += 1
+                    area_ventanas += area
+                elif obj_type == 'door':
+                    num_puertas += 1
+                    area_puertas += area
+                
+                objetos_detalle.append(obj_detail)
+            
+            # Calcular área total del plano (desde bounds)
+            area_total = bounds.get('width', 0) * bounds.get('height', 0)
+            
+            medidas = {
+                'area_total': round(area_total, 2),
+                'area_paredes': round(area_paredes, 2),
+                'area_ventanas': round(area_ventanas, 2),
+                'area_puertas': round(area_puertas, 2),
+                'perimetro_total': round(perimetro_total, 2),
+                'num_paredes': num_paredes,
+                'num_ventanas': num_ventanas,
+                'num_puertas': num_puertas,
+                'bounds': {
+                    'ancho': round(bounds.get('width', 0), 2),
+                    'alto': round(bounds.get('height', 0), 2)
+                },
+                'objetos': objetos_detalle,
+                'total_objetos': len(objects)
+            }
+            
+            return medidas
+            
+        except Exception as e:
+            print(f"⚠️ Error extrayendo medidas: {e}")
+            # Retornar medidas vacías en caso de error
+            return {
+                'area_total': 0,
+                'perimetro_total': 0,
+                'num_paredes': 0,
+                'num_ventanas': 0,
+                'num_puertas': 0,
+                'objetos': [],
+                'error': str(e)
+            }

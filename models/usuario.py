@@ -12,3 +12,4 @@ class Usuario(Base):
     fecha_creacion = Column(DateTime, default=datetime.datetime.utcnow)
     suscripciones = relationship("Suscripcion", back_populates="usuario")
     planos = relationship("Plano", back_populates="usuario")
+    cotizaciones = relationship("Cotizacion", back_populates="usuario")

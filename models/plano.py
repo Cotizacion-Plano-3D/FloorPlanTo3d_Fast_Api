@@ -21,3 +21,4 @@ class Plano(Base):
     # Relaciones
     usuario = relationship("Usuario", back_populates="planos")
     modelo3d = relationship("Modelo3D", back_populates="plano", uselist=False, cascade="all, delete-orphan")
+    cotizaciones = relationship("Cotizacion", back_populates="plano", cascade="all, delete-orphan")

@@ -15,6 +15,7 @@ from routers.planos import router as planos_router
 from routers.categoria import router as categoria_router
 from routers.material import router as material_router
 from routers.material_modelo3d import router as material_modelo3d_router
+from routers.cotizacion import router as cotizacion_router
 from swagger_config import custom_openapi
 from routers.google_auth import router as google_auth_router
 
@@ -64,6 +65,7 @@ app.include_router(planos_router)
 app.include_router(categoria_router)
 app.include_router(material_router)
 app.include_router(material_modelo3d_router)
+app.include_router(cotizacion_router)
 app.include_router(stripe_router)
 app.include_router(stripe_create_membresia_router)
 app.include_router(stripe_webhook_router)

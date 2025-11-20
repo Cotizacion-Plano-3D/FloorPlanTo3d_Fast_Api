@@ -119,20 +119,30 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                     "message": "Payment already processed"
                 })
             
-            # Crear suscripción
-            logger.info("[DB] Creando nueva suscripcion...")
-            fecha_inicio = datetime.utcnow()
-            fecha_fin = fecha_inicio + timedelta(days=membresia.duracion)
+            # Verificar si ya existe una suscripción activa para este usuario
+            from repositories.suscripcion_repository import get_active_suscripcion_by_user_id
+            logger.info(f"[DB] Verificando si el usuario ya tiene una suscripción activa...")
+            suscripcion_activa_existente = get_active_suscripcion_by_user_id(db, usuario.id)
             
-            nueva_suscripcion = Suscripcion(
-                usuario_id=usuario.id,
-                membresia_id=membresia.id,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
-                estado='activa'
-            )
-            db.add(nueva_suscripcion)
-            db.flush()  # Obtener ID sin commit final
+            if suscripcion_activa_existente:
+                logger.info(f"[INFO] Usuario ya tiene suscripción activa (ID: {suscripcion_activa_existente.id})")
+                logger.info(f"[INFO] Usando suscripción existente en lugar de crear una nueva")
+                nueva_suscripcion = suscripcion_activa_existente
+            else:
+                # Crear suscripción
+                logger.info("[DB] Creando nueva suscripcion...")
+                fecha_inicio = datetime.utcnow()
+                fecha_fin = fecha_inicio + timedelta(days=membresia.duracion)
+                
+                nueva_suscripcion = Suscripcion(
+                    usuario_id=usuario.id,
+                    membresia_id=membresia.id,
+                    fecha_inicio=fecha_inicio,
+                    fecha_fin=fecha_fin,
+                    estado='activa'
+                )
+                db.add(nueva_suscripcion)
+                db.flush()  # Obtener ID sin commit final
             
             logger.info(f"[OK] Suscripcion creada - ID: {nueva_suscripcion.id}")
             logger.info(f"[SUBSCRIPTION] Inicio: {fecha_inicio}")

@@ -6,8 +6,12 @@ import logging
 from database import get_db
 from models.membresia import Membresia
 from models.usuario import Usuario
+from models.suscripcion import Suscripcion
+from repositories.suscripcion_repository import get_active_suscripcion_by_user_id
 from config import settings
 from middleware.auth_middleware import get_current_user
+from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
 
 # Configurar logging
 logger = logging.getLogger(__name__)
@@ -16,6 +20,50 @@ logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 router = APIRouter(prefix="/api/stripe", tags=["stripe"])
+
+def crear_suscripcion_manual_interna(db: Session, usuario_id: int, membresia_id: int):
+    """
+    Función helper para crear suscripción manualmente.
+    Retorna la suscripción creada o None si ya existe una activa.
+    """
+    try:
+        # Verificar si ya existe una suscripción activa
+        suscripcion_activa = get_active_suscripcion_by_user_id(db, usuario_id)
+        if suscripcion_activa:
+            logger.warning(f"⚠️ Usuario {usuario_id} ya tiene una suscripción activa (ID: {suscripcion_activa.id})")
+            return None
+        
+        # Verificar que la membresía existe
+        membresia = db.query(Membresia).filter(Membresia.id == membresia_id).first()
+        if not membresia:
+            logger.error(f"❌ Membresía no encontrada: ID {membresia_id}")
+            return None
+        
+        # Crear la suscripción
+        nueva_suscripcion = Suscripcion(
+            usuario_id=usuario_id,
+            membresia_id=membresia_id,
+            fecha_inicio=datetime.utcnow(),
+            fecha_fin=datetime.utcnow() + timedelta(days=membresia.duracion),
+            estado='activa'
+        )
+        
+        db.add(nueva_suscripcion)
+        db.commit()
+        db.refresh(nueva_suscripcion)
+        
+        logger.info(f"✅ Suscripción manual creada - ID: {nueva_suscripcion.id}")
+        logger.info(f"   Usuario: {usuario_id}, Membresía: {membresia_id}")
+        logger.info(f"   Fecha inicio: {nueva_suscripcion.fecha_inicio}")
+        logger.info(f"   Fecha fin: {nueva_suscripcion.fecha_fin}")
+        
+        return nueva_suscripcion
+        
+    except Exception as e:
+        logger.error(f"❌ Error al crear suscripción manual: {str(e)}")
+        logger.exception("Stack trace completo:")
+        db.rollback()
+        return None
 
 class CheckoutSessionRequest(BaseModel):
     membresia_id: int
@@ -89,6 +137,19 @@ async def create_checkout_session(
         for key, value in session.metadata.items():
             logger.info(f"  - {key}: {value}")
         
+        # Crear suscripción manual después de crear la sesión de Stripe
+        logger.info("🔧 Creando suscripción manual después de crear sesión de checkout...")
+        suscripcion_creada = crear_suscripcion_manual_interna(
+            db=db,
+            usuario_id=current_user.id,
+            membresia_id=membresia.id
+        )
+        
+        if suscripcion_creada:
+            logger.info(f"✅ Suscripción manual creada exitosamente (ID: {suscripcion_creada.id})")
+        else:
+            logger.warning("⚠️ No se pudo crear la suscripción manual (puede que ya exista una activa o hubo un error)")
+        
         logger.info(f"🎉 Sesión lista para redirigir al usuario")
         
         return JSONResponse({
@@ -96,7 +157,8 @@ async def create_checkout_session(
             "url": session.url,
             "status": "success",
             "membresia": membresia.nombre,
-            "precio": float(membresia.precio)
+            "precio": float(membresia.precio),
+            "suscripcion_creada": suscripcion_creada.id if suscripcion_creada else None
         })
         
     except stripe.error.CardError as e:

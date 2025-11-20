@@ -77,7 +77,8 @@ origins = [
     "http://localhost:3000",  # URL de tu frontend Next.js
     "http://127.0.0.1:3000",
     "https://floorplanto3dfrontendreact-eight.vercel.app",
-    "https://floorplanto3dapi-production.up.railway.app/",
+    "https://floorplanto3dapi-production.up.railway.app",
+    "https://floorplanto3dfastapi-production.up.railway.app",
 ]
 
 app.add_middleware(

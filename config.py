@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     FLOORPLAN_API_URL: str = "https://floorplanto3dapi-production.up.railway.app"  # URL del servicio Flask
     GOOGLE_DRIVE_FOLDER_ID: str = "1_Mv_vpgc-0LCEuPaI49Ym3xvzvRhW7OW"  # ID del folder de Google Drive
     GOOGLE_CREDENTIALS_PATH: str = "./credentials.json"
-    GOOGLE_OAUTH_REDIRECT_URI: str = "http://localhost:8000/auth/google/callback"
+    GOOGLE_OAUTH_REDIRECT_URI: str = "https://floorplanto3dfastapi-production.up.railway.app/auth/google/callback"
     class Config:
         env_file = ".env"
 

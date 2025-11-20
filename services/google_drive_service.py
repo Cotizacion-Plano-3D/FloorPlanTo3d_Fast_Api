@@ -35,20 +35,16 @@ class GoogleDriveService:
             # Si no hay credenciales válidas, autenticar
             if not self.credentials or not self.credentials.valid:
                 if self.credentials and self.credentials.expired and self.credentials.refresh_token:
+                    # Refrescar token expirado
                     self.credentials.refresh(Request())
+                    # Guardar credenciales refrescadas
+                    with open('token.json', 'w') as token:
+                        token.write(self.credentials.to_json())
                 else:
-                    # Crear flujo OAuth2
-                    flow = Flow.from_client_secrets_file(
-                        self.credentials_path, 
-                        self.SCOPES,
-                        redirect_uri=self.redirect_uri
-                    )
-                    # Para aplicación web, usar puerto específico
-                    self.credentials = flow.run_local_server(port=8000)
-                
-                # Guardar credenciales para uso futuro
-                with open('token.json', 'w') as token:
-                    token.write(self.credentials.to_json())
+                    # En producción, no podemos usar run_local_server
+                    # Las credenciales deben obtenerse a través del callback OAuth
+                    print("❌ No hay credenciales válidas. Por favor, autentíquese visitando /auth/google/login")
+                    raise Exception("No hay credenciales de Google Drive. Visite /auth/google/login para autenticarse.")
             
             # Crear servicio de Google Drive
             self.service = build('drive', 'v3', credentials=self.credentials)

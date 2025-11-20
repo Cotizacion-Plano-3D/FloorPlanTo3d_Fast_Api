@@ -26,7 +26,7 @@ async def google_login():
         raise HTTPException(status_code=500, detail=f"Error iniciando autenticación: {str(e)}")
 
 @router.get("/callback")
-async def google_callback(code: str = None):
+async def google_callback(code: str = None, state: str = None):
     """Manejar callback de Google OAuth"""
     try:
         if not code:
@@ -46,7 +46,14 @@ async def google_callback(code: str = None):
         with open('token.json', 'w') as token_file:
             token_file.write(credentials.to_json())
         
-        return {"message": "Autenticación exitosa", "status": "success"}
+        print("✅ Credenciales de Google Drive guardadas exitosamente")
+        
+        return {
+            "message": "Autenticación exitosa", 
+            "status": "success",
+            "note": "Ahora puedes subir planos a Google Drive"
+        }
         
     except Exception as e:
+        print(f"❌ Error en callback: {e}")
         raise HTTPException(status_code=500, detail=f"Error en callback: {str(e)}")
